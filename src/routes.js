@@ -14,7 +14,7 @@ import Auth from './app/middlewares/Auth';
 Route.get('/', UserController.index);
 Route.post('/api/session', SessionController.store);
 
-Route.use(Auth);
+//Route.use(Auth);
 Route.post('/api/user', UserController.store);
 Route.put('/api/user', UserController.update);
 
