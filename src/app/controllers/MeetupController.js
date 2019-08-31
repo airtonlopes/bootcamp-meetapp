@@ -1,11 +1,14 @@
 import * as yup from 'yup';
+import { Op } from 'sequelize';
 import {
 	isBefore,
 	startOfHour,
 	parseISO,
-	isAfter,
 	subHours,
 	isPast,
+	format,
+	startOfDay,
+	endOfDay,
 } from 'date-fns';
 import Meetup from '../models/Meetup';
 
@@ -14,8 +17,17 @@ class MeetupController {
 	 *
 	 */
 	async index(req, res) {
+		const {
+			query: { date, page = 1 },
+		} = req;
+
 		const meetups = await Meetup.findAll({
-			where: { user_id: req.userId },
+			where: {
+				date,
+			},
+			limit: 20,
+			offset: (page - 1) * 20,
+			order: ['date'],
 		});
 		return res.json(meetups);
 	}
@@ -86,9 +98,7 @@ class MeetupController {
 				.json({ error: 'You cannot change past meetup' });
 		}
 
-		if (meetup.update(req.body)) {
-			return res.json(meetup);
-		}
+		return res.json(meetup);
 	}
 
 	/**

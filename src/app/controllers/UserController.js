@@ -1,5 +1,6 @@
-import User from '../models/User';
 import * as yup from 'yup';
+import User from '../models/User';
+import Meetup from '../models/Meetup';
 
 class UserController {
 	index(req, res) {
@@ -103,6 +104,13 @@ class UserController {
 		} catch (err) {
 			return res.status(500).json(err);
 		}
+	}
+
+	async meetups(req, res) {
+		const meetups = await Meetup.findAll({
+			where: { user_id: req.userId },
+		});
+		return res.json(meetups);
 	}
 }
 
