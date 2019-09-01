@@ -6,7 +6,6 @@ import {
 	parseISO,
 	subHours,
 	isPast,
-	format,
 	startOfDay,
 	endOfDay,
 } from 'date-fns';
@@ -22,10 +21,12 @@ class MeetupController {
 			query: { date = null, page = 1 },
 		} = req;
 
+		const pg = 10;
+
 		const criteria = {
 			include: [User],
-			limit: 10,
-			offset: 10 * page - 10,
+			limit: pg,
+			offset: pg * page - pg,
 		};
 
 		if (date) {
