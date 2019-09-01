@@ -11,6 +11,7 @@ import {
 	endOfDay,
 } from 'date-fns';
 import Meetup from '../models/Meetup';
+import User from '../models/User';
 
 class MeetupController {
 	/**
@@ -18,17 +19,25 @@ class MeetupController {
 	 */
 	async index(req, res) {
 		const {
-			query: { date, page = 1 },
+			query: { date = null, page = 1 },
 		} = req;
 
-		const meetups = await Meetup.findAll({
-			where: {
-				date,
-			},
-			limit: 20,
-			offset: (page - 1) * 20,
-			order: ['date'],
-		});
+		const criteria = {
+			include: [User],
+			limit: 10,
+			offset: 10 * page - 10,
+		};
+
+		if (date) {
+			const sDate = parseISO(date);
+			criteria.where = {
+				date: {
+					[Op.between]: [startOfDay(sDate), endOfDay(sDate)],
+				},
+			};
+		}
+
+		const meetups = await Meetup.findAll(criteria);
 		return res.json(meetups);
 	}
 

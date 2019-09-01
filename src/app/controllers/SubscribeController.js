@@ -1,7 +1,10 @@
 import * as yup from 'yup';
-import { isBefore, parseISO, isAfter } from 'date-fns';
+import { isBefore } from 'date-fns';
 import Subscribe from '../models/Subscribe';
 import Meetup from '../models/Meetup';
+import Queue from '../../services/Queue';
+import Subscription from '../jobs/Subscription';
+import User from '../models/User';
 
 class SubscribeController {
 	async store(req, res) {
@@ -21,38 +24,39 @@ class SubscribeController {
 				.json({ error: 'Validation fail. Check information' });
 		}
 
-		const meetup = await Meetup.findByPk(meetup_id);
+		const user = await User.findByPk(user_id);
+		const meetup = await Meetup.findByPk(meetup_id, { include: [User] });
 
-		if (!meetup) {
-			return res.status(404).json({ error: 'Meetup does not exist' });
-		}
-
-		if (meetup.user_id === user_id) {
+		if (user.id === meetup.User.id) {
 			return res.status(400).json({
-				error:
-					"You organize this meetup. You don't need then subscribe",
+				error: "You don't need to subscriber in your own meetup",
 			});
 		}
 
-		if (isAfter(parseISO(meetup.date), new Date())) {
-			return res.status(400).json({ error: 'This meetup already past' });
+		if (isBefore(meetup.date, new Date())) {
+			return res
+				.status(400)
+				.json({ error: "You can't to subscriber in past meetups" });
 		}
 
-		const subscribe = await Subscribe.findOne({
+		const checkSubscriberExists = await Subscribe.findOne({
 			where: [{ meetup_id }, { user_id }],
 		});
 
-		if (subscribe) {
+		if (checkSubscriberExists) {
 			return res
 				.status(400)
-				.json({ error: 'You already subscriber at this meetup' });
+				.json({ error: 'You already subscriber in this meetup' });
 		}
 
-		// O usuário não pode se inscrever em dois meetups que acontecem no mesmo horário.
-
-		// Enviar email ao organizador
+		// [*] O usuário não pode se inscrever em dois meetups que acontecem no mesmo horário.
 
 		const subscriber = await Subscribe.create({ meetup_id, user_id });
+
+		await Queue.add(Subscription.key, {
+			meetup,
+			user,
+		});
 
 		return res.json(subscriber);
 	}

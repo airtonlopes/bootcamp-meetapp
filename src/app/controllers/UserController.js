@@ -1,4 +1,5 @@
 import * as yup from 'yup';
+import { Op } from 'sequelize';
 import User from '../models/User';
 import Meetup from '../models/Meetup';
 
@@ -108,7 +109,15 @@ class UserController {
 
 	async meetups(req, res) {
 		const meetups = await Meetup.findAll({
-			where: { user_id: req.userId },
+			where: [
+				{ user_id: req.userId },
+				{
+					date: {
+						[Op.gt]: new Date(),
+					},
+				},
+			],
+			order: [['date', 'DESC']],
 		});
 		return res.json(meetups);
 	}
